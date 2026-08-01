@@ -335,7 +335,7 @@ PhysicsBody *physics_sync_body(PhysicsWorld *world, uint32_t id, int x, int y, i
             update_body_geometry(&world->bodies[i], x, y, width, height, world->mass_density);
             int d = (int)((world->bodies[i].x + world->bodies[i].width / 2.0) / screen_width);
             if (d < 0) d = 0;
-            if (d >= 10) d = 9;
+            if (d >= FWM_DESKTOPS) d = FWM_DESKTOPS - 1;
             world->bodies[i].desktop_id = d;
             return &world->bodies[i];
         }
@@ -379,7 +379,7 @@ PhysicsBody *physics_sync_body(PhysicsWorld *world, uint32_t id, int x, int y, i
 
     int d = (int)((body->x + body->width / 2.0) / screen_width);
     if (d < 0) d = 0;
-    if (d >= 10) d = 9;
+    if (d >= FWM_DESKTOPS) d = FWM_DESKTOPS - 1;
     body->desktop_id = d;
 
     return body;
@@ -564,8 +564,7 @@ static void rebuild_walls(struct Engine *eng, PhysicsWorld *world, int screen_w,
             if (B2_IS_NON_NULL(eng->walls[i])) b2DestroyBody(eng->walls[i]);
         }
     }
-
-    double W = 10.0 * screen_w; // full virtual-desktop span
+    double W = FWM_DESKTOPS * screen_w; // full virtual-desktop span
     double H = screen_h;
     double t = WALL_THICK_PX;
 
@@ -1132,7 +1131,7 @@ void physics_step(PhysicsWorld *world, int screen_width, int screen_height,
             // to Box2D so restitution can bounce them; clamping/zeroing here would
             // kill the bounce and make windows slide along the wall. On a real
             // escape, reflect (don't zero) so the window springs back into view.
-            double W = 10.0 * screen_width, H = (double)screen_height;
+            double W = FWM_DESKTOPS * screen_width, H = (double)screen_height;
             double max_x = W - m->width;  if (max_x < 0) max_x = 0;
             double max_y = H - m->height; if (max_y < 0) max_y = 0;
             double r = world->restitution;
@@ -1180,7 +1179,7 @@ void physics_step(PhysicsWorld *world, int screen_width, int screen_height,
 
         int d = (int)((m->x + m->width / 2.0) / screen_width);
         if (d < 0) d = 0;
-        if (d >= 10) d = 9;
+        if (d >= FWM_DESKTOPS) d = FWM_DESKTOPS - 1;
         m->desktop_id = d;
     }
 }

@@ -209,6 +209,9 @@ target_link_libraries(fwm PRIVATE
 
 target_compile_definitions(fwm PRIVATE WLR_USE_UNSTABLE)
 
+set(FWM_DESKTOPS "10" CACHE STRING "Number of virtual desktops")
+target_compile_definitions(fwm PRIVATE FWM_DESKTOPS=${FWM_DESKTOPS})
+
 if(PIPEWIRE_FOUND)
     target_compile_definitions(fwm PRIVATE HAVE_PIPEWIRE)
     target_include_directories(fwm PRIVATE ${PIPEWIRE_INCLUDE_DIRS})

@@ -21,7 +21,9 @@
  * sizeof(BodySlot)) of static memory, which is tens of kilobytes. */
 #define MAX_WINDOWS             256
 /* Virtual desktops on the strip. The world is this many screens wide. */
+#ifndef FWM_DESKTOPS
 #define FWM_DESKTOPS            10
+#endif
 #define DRAG_MARGIN             5
 #define PHYSICS_MARGIN          3
 #define MASS_DENSITY            0.0005
