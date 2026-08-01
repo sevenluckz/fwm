@@ -866,7 +866,15 @@ void server_drag_swing_place(FwmServer *server) {
  * released on a desktop it was already standing on). */
 void server_camera_settled(FwmServer *server) {
     FwmView *xv;
-    wl_list_for_each(xv, &server->views, link) view_sync_position(xv);
+    wl_list_for_each(xv, &server->views, link) {
+        if (xv->scene_tree) {
+            PhysicsBody *body = physics_find_body(&server->physics, xv->id);
+            if (body) {
+                server_place_node(server, &xv->scene_tree->node, body->x, body->y);
+            }
+        }
+        view_sync_position(xv);
+    }
 
     /* Arriving on a desktop should hand the keyboard to something there.
      * Otherwise focus stays on the window you left behind and typing goes to a
