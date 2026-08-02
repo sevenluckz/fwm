@@ -912,25 +912,34 @@ static void load_outputs(toml_table_t *root, FwmConfig *cfg) {
         o->transform = -1;
 
         toml_datum_t name = toml_string_in(tbl, "name");
-        if (!name.ok) {
-            config_report_error(cfg, "[[output]] #%d: no name — entry ignored", i + 1);
+        toml_datum_t make = toml_string_in(tbl, "make");
+        toml_datum_t model = toml_string_in(tbl, "model");
+        toml_datum_t serial = toml_string_in(tbl, "serial");
+
+        if (!name.ok && !make.ok && !model.ok && !serial.ok) {
+            config_report_error(cfg, "[[output]] #%d: no name/make/model/serial matcher — entry ignored", i + 1);
             continue;
         }
-        snprintf(o->name, sizeof(o->name), "%s", name.u.s);
-        free(name.u.s);
+
+        if (name.ok) { snprintf(o->name, sizeof(o->name), "%s", name.u.s); free(name.u.s); }
+        if (make.ok) { snprintf(o->make, sizeof(o->make), "%s", make.u.s); free(make.u.s); }
+        if (model.ok) { snprintf(o->model, sizeof(o->model), "%s", model.u.s); free(model.u.s); }
+        if (serial.ok) { snprintf(o->serial, sizeof(o->serial), "%s", serial.u.s); free(serial.u.s); }
+
+        const char *ident = o->name[0] ? o->name : (o->make[0] ? o->make : (o->model[0] ? o->model : (o->serial[0] ? o->serial : "unnamed")));
 
         toml_datum_t x = toml_int_in(tbl, "x");
         toml_datum_t y = toml_int_in(tbl, "y");
         if (x.ok != y.ok) {
             config_report_error(cfg, "[[output]] %s: x and y must be given together — position ignored",
-                                o->name);
+                                ident);
         } else if (x.ok) {
             /* Negative is legal: a monitor may sit left of the origin. The cap
              * only keeps a typo from putting a screen a million px away, where
              * nothing would ever be drawn on it. */
             if (x.u.i < -32768 || x.u.i > 32768 || y.u.i < -32768 || y.u.i > 32768) {
                 config_report_error(cfg, "[[output]] %s: position %lld,%lld out of range — ignored",
-                                    o->name, (long long)x.u.i, (long long)y.u.i);
+                                    ident, (long long)x.u.i, (long long)y.u.i);
             } else {
                 o->have_pos = 1;
                 o->x = (int)x.u.i;
@@ -942,7 +951,7 @@ static void load_outputs(toml_table_t *root, FwmConfig *cfg) {
         if (desk.ok) {
             if (desk.u.i < 0 || desk.u.i >= 10)
                 config_report_error(cfg, "[[output]] %s: desktop %lld out of range 0..9 — ignored",
-                                    o->name, (long long)desk.u.i);
+                                    ident, (long long)desk.u.i);
             else
                 o->desktop = (int)desk.u.i;
         }
@@ -959,7 +968,7 @@ static void load_outputs(toml_table_t *root, FwmConfig *cfg) {
                 o->have_mode = 1;
             else
                 config_report_error(cfg, "[[output]] %s: mode \"%s\" is not WIDTHxHEIGHT[@HZ] — ignored",
-                                    o->name, mode.u.s);
+                                    ident, mode.u.s);
             free(mode.u.s);
         }
 
@@ -976,7 +985,7 @@ static void load_outputs(toml_table_t *root, FwmConfig *cfg) {
              * ~10 a desktop holds a single button. */
             if (scale.u.d < 0.25 || scale.u.d > 10.0)
                 config_report_error(cfg, "[[output]] %s: scale %g out of range 0.25..10 — ignored",
-                                    o->name, scale.u.d);
+                                    ident, scale.u.d);
             else
                 o->scale = scale.u.d;
         }
@@ -988,7 +997,7 @@ static void load_outputs(toml_table_t *root, FwmConfig *cfg) {
                 config_report_error(cfg, "[[output]] %s: transform \"%s\" is not one of "
                                          "normal, 90, 180, 270, flipped, flipped-90, "
                                          "flipped-180, flipped-270 — ignored",
-                                    o->name, tr.u.s);
+                                    ident, tr.u.s);
             free(tr.u.s);
         }
 
@@ -996,10 +1005,15 @@ static void load_outputs(toml_table_t *root, FwmConfig *cfg) {
     }
 }
 
-const ConfigOutput *config_find_output(const FwmConfig *cfg, const char *name) {
-    if (!cfg || !name) return NULL;
+const ConfigOutput *config_find_output(const FwmConfig *cfg, const char *name, const char *make, const char *model, const char *serial) {
+    if (!cfg) return NULL;
     for (int i = 0; i < cfg->output_count; i++) {
-        if (strcmp(cfg->outputs[i].name, name) == 0) return &cfg->outputs[i];
+        const ConfigOutput *o = &cfg->outputs[i];
+        if (o->name[0] && (!name || strcmp(o->name, name) != 0)) continue;
+        if (o->make[0] && (!make || strcmp(o->make, make) != 0)) continue;
+        if (o->model[0] && (!model || strcmp(o->model, model) != 0)) continue;
+        if (o->serial[0] && (!serial || strcmp(o->serial, serial) != 0)) continue;
+        return o;
     }
     return NULL;
 }

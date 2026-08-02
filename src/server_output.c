@@ -686,7 +686,7 @@ static void server_output_layout_update(FwmServer *server) {
 
     if (first) {
         const ConfigOutput *pc = config_find_output(&server->config,
-                                                    primary->wlr_output->name);
+                                                    primary->wlr_output->name, primary->wlr_output->make, primary->wlr_output->model, primary->wlr_output->serial);
         primary->desktop = (pc && pc->desktop >= 0) ? pc->desktop : 0;
         wlr_log(WLR_INFO, "desktop is %dx%d (from %s)", server->screen_width,
                 server->screen_height, primary->wlr_output->name);
@@ -711,7 +711,7 @@ static void server_output_layout_update(FwmServer *server) {
         if (o->desktop >= 0 && o->desktop < FWM_DESKTOPS && clash == o) continue;
 
         /* What [[output]] asked for, if nobody else has it. */
-        const ConfigOutput *oc = config_find_output(&server->config, o->wlr_output->name);
+        const ConfigOutput *oc = config_find_output(&server->config, o->wlr_output->name, o->wlr_output->make, o->wlr_output->model, o->wlr_output->serial);
         if (oc && oc->desktop >= 0 && !server_output_showing(server, oc->desktop)) {
             o->desktop = oc->desktop;
             continue;
@@ -804,7 +804,7 @@ static void output_leave_layout(FwmServer *server, FwmOutput *out) {
 }
 
 static void output_join_layout(FwmServer *server, FwmOutput *out) {
-    const ConfigOutput *cfg = config_find_output(&server->config, out->wlr_output->name);
+    const ConfigOutput *cfg = config_find_output(&server->config, out->wlr_output->name, out->wlr_output->make, out->wlr_output->model, out->wlr_output->serial);
     if (cfg && cfg->have_pos)
         wlr_output_layout_add(server->output_layout, out->wlr_output, cfg->x, cfg->y);
     else if (out->manual_pos)
@@ -1052,7 +1052,7 @@ bool server_output_apply_setup(FwmServer *server, FwmOutput *out,
  * config paths only; a mode the hardware refuses is logged and the screen goes
  * on running what it was running. */
 static void output_apply_mode_config(FwmServer *server, FwmOutput *out) {
-    const ConfigOutput *cfg = config_find_output(&server->config, out->wlr_output->name);
+    const ConfigOutput *cfg = config_find_output(&server->config, out->wlr_output->name, out->wlr_output->make, out->wlr_output->model, out->wlr_output->serial);
     if (!cfg) return;
     FwmOutputSetup setup = server_output_setup_from_config(cfg);
     if (!setup.have_mode && !setup.have_scale && !setup.have_transform) return;
@@ -1105,7 +1105,7 @@ void server_lid_changed(FwmServer *server, int closed) {
  * (the lid, the keybind) is left alone — the file did not ask for it, and a
  * reload must not light up the panel of a closed laptop. */
 static void output_apply_config(FwmServer *server, FwmOutput *out) {
-    const ConfigOutput *cfg = config_find_output(&server->config, out->wlr_output->name);
+    const ConfigOutput *cfg = config_find_output(&server->config, out->wlr_output->name, out->wlr_output->make, out->wlr_output->model, out->wlr_output->serial);
     int want_on = !cfg || cfg->enabled;
 
     if (!want_on) {
@@ -1137,7 +1137,7 @@ void server_outputs_apply_config(FwmServer *server) {
      * same as a desktop bind. */
     wl_list_for_each(o, &server->outputs, link) {
         if (!o->enabled) continue;
-        const ConfigOutput *oc = config_find_output(&server->config, o->wlr_output->name);
+        const ConfigOutput *oc = config_find_output(&server->config, o->wlr_output->name, o->wlr_output->make, o->wlr_output->model, o->wlr_output->serial);
         if (oc && oc->desktop >= 0) server_output_show_desktop(server, o, oc->desktop, 0);
     }
 }
@@ -1168,7 +1168,7 @@ static void handle_new_output(struct wl_listener *listener, void *data) {
      * [[output]] asks for, or the lowest no other monitor is showing. */
     output->desktop = -1;
 
-    const ConfigOutput *cfg = config_find_output(&server->config, wlr_output->name);
+    const ConfigOutput *cfg = config_find_output(&server->config, wlr_output->name, wlr_output->make, wlr_output->model, wlr_output->serial);
     wlr_log(WLR_INFO, "output %s: %dx%d, scale %.2f%s", wlr_output->name,
             wlr_output->width, wlr_output->height, wlr_output->scale,
             cfg ? " ([[output]] entry found)" : "");

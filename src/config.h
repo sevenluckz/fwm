@@ -568,6 +568,9 @@ typedef struct {
  */
 typedef struct {
     char name[64];
+    char make[64];
+    char model[64];
+    char serial[64];
     int  have_pos;   /* x/y were given */
     int  x, y;
     int  desktop;    /* -1: take whatever is free */
@@ -750,8 +753,8 @@ void config_option_get(const FwmConfig *cfg, const ConfigOption *opt,
 int config_match_rules(const FwmConfig *cfg, const char *app_id, const char *title,
                        ConfigRule *out);
 
-/* The [[output]] entry for a monitor of this name, or NULL. */
-const ConfigOutput *config_find_output(const FwmConfig *cfg, const char *name);
+/* The [[output]] entry for a monitor matching these details, or NULL. */
+const ConfigOutput *config_find_output(const FwmConfig *cfg, const char *name, const char *make, const char *model, const char *serial);
 
 /* The bind whose key and modifiers match, or NULL. `mods` must equal the
  * bind's own mask exactly — a bind on super+q does not fire for super+shift+q.
